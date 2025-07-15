@@ -6,11 +6,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OmniQuiz AI</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts - Poppins -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     
+    <!-- React & ReactDOM CDNs -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel CDN for JSX transformation -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <style>
@@ -271,22 +275,6 @@
             </button>
         );
 
-        // Utility function for exponential backoff retry
-        const retryOperation = async (operation, maxRetries = 3, delay = 1000) => {
-            for (let i = 0; i < maxRetries; i++) {
-                try {
-                    return await operation();
-                } catch (e) {
-                    if (e.message.includes('API error: 503') && i < maxRetries - 1) {
-                        console.warn(`Retry attempt ${i + 1} after 503 error. Retrying in ${delay / 1000} seconds...`);
-                        await new Promise(res => setTimeout(res, delay));
-                        delay *= 2; // Exponential backoff
-                    } else {
-                        throw e; // Re-throw if not 503 or max retries reached
-                    }
-                }
-            }
-        };
 
         // --- Main App Component ---
         function App() {
@@ -423,51 +411,49 @@
             setFileUploadMessage(''); // Clear any previous file upload message
 
             try {
-              await retryOperation(async () => {
-                const questionCountDesc = { 'ai': 'an optimal number up to 70', '1-10': '1-10', '10-20': '10-20', '20-30': '20-30', '30-40': '30-40', '40-50': '40-50', '50-60': '50-60', '60-70': '60-70' }[numQuestions];
-                const prompt = `Create a quiz from the text below with ${questionCountDesc} questions of these types: ${questionTypes.join(', ')}. Output must be a valid JSON array of question objects.
-                - "multiple_choice": needs "options" (array of 4 strings) and "correctAnswer" (string).
-                - "true_false": needs "correctAnswer" (boolean).
-                - "fill_in_the_blank": needs "question" with "___" and "correctAnswer" (string for the blank).
-                - "short_answer": needs "referenceAnswer" (concise correct answer).
-                - "long_answer": needs "referenceAnswer" (detailed correct answer).
-                Text: ${inputText}`;
-                const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } };
-                const apiKey = ""; // API key is provided by the environment
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                
-                if (!response.ok) {
-                  const errorText = await response.text();
-                  console.error("Gemini API Error on quiz generation:", errorText);
-                  throw new Error(`API error: ${response.status}. Please try again.`);
-                }
+              const questionCountDesc = { 'ai': 'an optimal number up to 70', '1-10': '1-10', '10-20': '10-20', '20-30': '20-30', '30-40': '30-40', '40-50': '40-50', '50-60': '50-60', '60-70': '60-70' }[numQuestions];
+              const prompt = `Create a quiz from the text below with ${questionCountDesc} questions of these types: ${questionTypes.join(', ')}. Output must be a valid JSON array of question objects.
+              - "multiple_choice": needs "options" (array of 4 strings) and "correctAnswer" (string).
+              - "true_false": needs "correctAnswer" (boolean).
+              - "fill_in_the_blank": needs "question" with "___" and "correctAnswer" (string for the blank).
+              - "short_answer": needs "referenceAnswer" (concise correct answer).
+              - "long_answer": needs "referenceAnswer" (detailed correct answer).
+              Text: ${inputText}`;
+              const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } };
+              const apiKey = "AIzaSyB4v8PbwqM7UPquJeS1QYQF7aORjFxliik"; // API key is provided by the environment
+              const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+              const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+              
+              if (!response.ok) {
+                const errorText = await response.text();
+                console.error("Gemini API Error on quiz generation:", errorText);
+                throw new Error(`API error: ${response.status}. See console for details.`);
+              }
 
-                const result = await response.json();
-                let rawQuizText = result.candidates[0].content.parts[0].text;
+              const result = await response.json();
+              let rawQuizText = result.candidates[0].content.parts[0].text;
 
-                // Attempt to clean the JSON string if it's wrapped in markdown code block
-                if (rawQuizText.startsWith('```json') && rawQuizText.endsWith('```')) {
-                    rawQuizText = rawQuizText.substring(7, rawQuizText.length - 3).trim();
-                } else if (rawQuizText.startsWith('```') && rawQuizText.endsWith('```')) {
-                    // Catch generic code blocks too, if the model sometimes forgets 'json'
-                    rawQuizText = rawQuizText.substring(3, rawQuizText.length - 3).trim();
-                }
+              // Attempt to clean the JSON string if it's wrapped in markdown code block
+              if (rawQuizText.startsWith('```json') && rawQuizText.endsWith('```')) {
+                  rawQuizText = rawQuizText.substring(7, rawQuizText.length - 3).trim();
+              } else if (rawQuizText.startsWith('```') && rawQuizText.endsWith('```')) {
+                  // Catch generic code blocks too, if the model sometimes forgets 'json'
+                  rawQuizText = rawQuizText.substring(3, rawQuizText.length - 3).trim();
+              }
 
-                let parsedQuiz;
-                try {
-                    parsedQuiz = JSON.parse(rawQuizText);
-                } catch (parseError) {
-                    console.error("JSON Parse error:", parseError);
-                    throw new Error(`Failed to parse quiz data. The AI response might be malformed. Raw response: ${rawQuizText.substring(0, 200)}...`);
-                }
-                
-                if (Array.isArray(parsedQuiz) && parsedQuiz.length > 0) {
-                  setQuizData(parsedQuiz); setQuizQueue([...parsedQuiz]); setView('quiz');
-                } else {
-                  setError("AI returned an empty or invalid quiz.");
-                }
-              }); // End of retryOperation
+              let parsedQuiz;
+              try {
+                  parsedQuiz = JSON.parse(rawQuizText);
+              } catch (parseError) {
+                  console.error("JSON Parse error:", parseError);
+                  throw new Error(`Failed to parse quiz data. The AI response might be malformed. Raw response: ${rawQuizText.substring(0, 200)}...`);
+              }
+              
+              if (Array.isArray(parsedQuiz) && parsedQuiz.length > 0) {
+                setQuizData(parsedQuiz); setQuizQueue([...parsedQuiz]); setView('quiz');
+              } else {
+                setError("AI returned an empty or invalid quiz.");
+              }
             } catch (e) {
               console.error("Quiz generation error:", e);
               setError(`Failed to generate quiz. ${e.message}`);
@@ -479,45 +465,43 @@
           const evaluateTextAnswer = async (userAnswer, question) => {
             setIsEvaluating(true); setEvaluationFeedback(null);
             try {
-              await retryOperation(async () => {
-                const prompt = `Evaluate the user's answer. Question: "${question.question}". Reference Answer: "${question.referenceAnswer || question.correctAnswer}". User's Answer: "${userAnswer}". Output JSON with "evaluation" ("correct", "partially correct", "incorrect") and a concise "reason".`;
-                const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } };
-                const apiKey = ""; // API key is provided by the environment
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                
-                if (!response.ok) {
-                  const errorText = await response.text();
-                  console.error("Gemini API Error on evaluation:", errorText);
-                  throw new Error(`Evaluation API error: ${response.status}. Please try again.`);
-                }
+              const prompt = `Evaluate the user's answer. Question: "${question.question}". Reference Answer: "${question.referenceAnswer || question.correctAnswer}". User's Answer: "${userAnswer}". Output JSON with "evaluation" ("correct", "partially correct", "incorrect") and a concise "reason".`;
+              const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } };
+              const apiKey = "AIzaSyB4v8PbwqM7UPquJeS1QYQF7aORjFxliik"; // API key is provided by the environment
+              const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+              const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+              
+              if (!response.ok) {
+                const errorText = await response.text();
+                console.error("Gemini API Error on evaluation:", errorText);
+                throw new Error(`Evaluation API error: ${response.status}. See console for details.`);
+              }
 
-                const result = await response.json();
-                let rawEvaluationText = result.candidates[0].content.parts[0].text;
+              const result = await response.json();
+              let rawEvaluationText = result.candidates[0].content.parts[0].text;
 
-                // Attempt to clean the JSON string if it's wrapped in markdown code block
-                if (rawEvaluationText.startsWith('```json') && rawEvaluationText.endsWith('```')) {
-                    rawEvaluationText = rawEvaluationText.substring(7, rawEvaluationText.length - 3).trim();
-                } else if (rawEvaluationText.startsWith('```') && rawEvaluationText.endsWith('```')) {
-                    rawEvaluationText = rawEvaluationText.substring(3, rawEvaluationText.length - 3).trim();
-                }
+              // Attempt to clean the JSON string if it's wrapped in markdown code block
+              if (rawEvaluationText.startsWith('```json') && rawEvaluationText.endsWith('```')) {
+                  rawEvaluationText = rawEvaluationText.substring(7, rawEvaluationText.length - 3).trim();
+              } else if (rawEvaluationText.startsWith('```') && rawEvaluationText.endsWith('```')) {
+                  rawEvaluationText = rawEvaluationText.substring(3, rawEvaluationText.length - 3).trim();
+              }
 
-                let parsedEvaluation;
-                try {
-                    parsedEvaluation = JSON.parse(rawEvaluationText);
-                } catch (parseError) {
-                    console.error("JSON Parse error on evaluation:", parseError);
-                    throw new Error(`Failed to parse evaluation data. The AI response might be malformed. Raw response: ${rawEvaluationText.substring(0, 200)}...`);
-                }
+              let parsedEvaluation;
+              try {
+                  parsedEvaluation = JSON.parse(rawEvaluationText);
+              } catch (parseError) {
+                  console.error("JSON Parse error on evaluation:", parseError);
+                  throw new Error(`Failed to parse evaluation data. The AI response might be malformed. Raw response: ${rawEvaluationText.substring(0, 200)}...`);
+              }
 
-                setEvaluationFeedback(parsedEvaluation);
-                let scoreToAdd = 0;
-                if (parsedEvaluation.evaluation === "correct") { setIsCorrect(true); scoreToAdd = 1; }
-                else if (parsedEvaluation.evaluation === "partially correct") { setIsCorrect(null); scoreToAdd = 0.5; }
-                else { setIsCorrect(false); }
-                if (correctionMode !== 'end') setScore(prev => prev + scoreToAdd);
-                setUserAnswers(prev => [...prev, { ...question, userAnswer, evaluation: parsedEvaluation, scoreAdded: scoreToAdd }]);
-              }); // End of retryOperation
+              setEvaluationFeedback(parsedEvaluation);
+              let scoreToAdd = 0;
+              if (parsedEvaluation.evaluation === "correct") { setIsCorrect(true); scoreToAdd = 1; }
+              else if (parsedEvaluation.evaluation === "partially correct") { setIsCorrect(null); scoreToAdd = 0.5; }
+              else { setIsCorrect(false); }
+              if (correctionMode !== 'end') setScore(prev => prev + scoreToAdd);
+              setUserAnswers(prev => [...prev, { ...question, userAnswer, evaluation: parsedEvaluation, scoreAdded: scoreToAdd }]);
             } catch (e) {
               console.error("Evaluation error:", e);
               setError(`Failed to evaluate answer. ${e.message}`);
@@ -697,7 +681,10 @@
         // Render the App component into the root div
         ReactDOM.render(<App />, document.getElementById('root'));
     </script>
+    <!-- PDF.js CDN (placed here to ensure window.pdfjsLib is available before React component mounts) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <!-- Mammoth.js CDN for DOCX (placed here to ensure window.mammoth is available before React component mounts) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 </body>
 </html>
+
