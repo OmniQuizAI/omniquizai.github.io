@@ -413,7 +413,7 @@
                 if (!response.ok) {
                     const errorText = await response.text();
                     console.error("API Error Response:", errorText);
-                    throw new Error(`API request failed with status ${response.status}`);
+                    throw new Error(`API request failed with status ${response.status}: ${errorText}`);
                 }
                 return response; // Success
               } catch (error) {
@@ -423,13 +423,64 @@
                   console.log(`Service unavailable. Retrying in ${Math.round(delay / 1000)}s... (Attempt ${i + 1}/${maxRetries})`);
                   await new Promise(resolve => setTimeout(resolve, delay));
                 } else {
-                  // For other errors (e.g., network issues, non-503 status codes), fail immediately
+                  // For other errors (e.g., network issues, non-503 status codes), rethrow immediately.
                   throw error;
                 }
               }
             }
             // If all retries fail, throw the last captured error
             throw lastError;
+          };
+
+          // New function to call Gemini API with model fallback
+          const callGeminiApi = async (prompt, generationConfig) => {
+              // List of models to try in order of preference
+              const models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+              // API key is left empty as Canvas will provide it at runtime
+              const apiKey = ""; 
+
+              for (let i = 0; i < models.length; i++) {
+                  const model = models[i];
+                  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+                  const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig };
+
+                  try {
+                      // Attempt to fetch with retry logic for the current model
+                      const response = await fetchWithRetry(apiUrl, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify(payload)
+                      });
+                      const result = await response.json();
+
+                      // Validate the structure of the successful response
+                      // If the response contains valid content, return it
+                      if (result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
+                          return result; // Successfully got content, return it
+                      } else {
+                          // If response structure is unexpected but no HTTP error, log and try next model
+                          console.warn(`API response from model ${model} was empty or malformed, trying next model.`);
+                          if (i === models.length - 1) { // If this was the last model, throw final error
+                              throw new Error("Servers are overloaded, please try again later.");
+                          }
+                          continue; // Try the next model in the fallback list
+                      }
+                  } catch (error) {
+                      // Log the error for debugging purposes
+                      console.error(`Attempt with model ${model} failed:`, error);
+                      
+                      // If it's not the last model, try the next one in the fallback list
+                      if (i < models.length - 1) {
+                          continue; 
+                      } else {
+                          // If it's the last model and it failed, throw the final error message
+                          throw new Error("Servers are overloaded, please try again later.");
+                      }
+                  }
+              }
+              // This line should ideally not be reached if the loop logic is correct,
+              // but serves as a final safeguard.
+              throw new Error("Servers are overloaded, please try again later.");
           };
 
 
@@ -450,13 +501,10 @@
               - "short_answer": needs "referenceAnswer" (concise correct answer).
               - "long_answer": needs "referenceAnswer" (detailed correct answer).
               Text: ${inputText}`;
-              const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } };
-              const apiKey = "AIzaSyB4v8PbwqM7UPquJeS1QYQF7aORjFxliik";
-              const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
               
-              const response = await fetchWithRetry(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+              // Use the new callGeminiApi function
+              const result = await callGeminiApi(prompt, { responseMimeType: "application/json" });
               
-              const result = await response.json();
               let rawQuizText = result.candidates[0].content.parts[0].text;
 
               if (rawQuizText.startsWith('```json') && rawQuizText.endsWith('```')) {
@@ -490,13 +538,10 @@
             setIsEvaluating(true); setEvaluationFeedback(null);
             try {
               const prompt = `Evaluate the user's answer. Question: "${question.question}". Reference Answer: "${question.referenceAnswer || question.correctAnswer}". User's Answer: "${userAnswer}". Output JSON with "evaluation" ("correct", "partially correct", "incorrect") and a concise "reason".`;
-              const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } };
-              const apiKey = "AIzaSyB4v8PbwqM7UPquJeS1QYQF7aORjFxliik";
-              const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-              const response = await fetchWithRetry(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
               
-              const result = await response.json();
+              // Use the new callGeminiApi function
+              const result = await callGeminiApi(prompt, { responseMimeType: "application/json" });
+              
               let rawEvaluationText = result.candidates[0].content.parts[0].text;
 
               if (rawEvaluationText.startsWith('```json') && rawEvaluationText.endsWith('```')) {
@@ -695,4 +740,3 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 </body>
 </html>
-
