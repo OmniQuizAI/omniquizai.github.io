@@ -76,6 +76,28 @@
         .btn-3d:disabled .btn-3d-text {
             cursor: not-allowed;
         }
+
+        /* Keyframes for the circular loader animation */
+        @keyframes circular-dash {
+            0% {
+                stroke-dashoffset: 282.7; /* Circumference of a circle with radius 45 (2 * PI * 45) */
+                transform: rotate(0deg);
+            }
+            50% {
+                stroke-dashoffset: 0;
+                transform: rotate(360deg);
+            }
+            100% {
+                stroke-dashoffset: -282.7; /* Negative offset to continue rotation */
+                transform: rotate(720deg);
+            }
+        }
+
+        /* Keyframes for the full rotation of the loader */
+        @keyframes rotate-loader {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -109,7 +131,7 @@
 
         // Updated & Fixed OQ Logo Component
         const OQLogo = ({ className }) => (
-            <svg className={className} viewBox="0 0 100 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg className={className} viewBox="-15 -15 130 90" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <defs>
                     <linearGradient id="logoGradient" x1="0" y1="0" x2="1" y2="1">
                         <stop stopColor="#6366F1"/>
@@ -133,6 +155,37 @@
                 </g>
             </svg>
         );
+
+        // Circular Loader Component
+        const CircularLoader = ({ className = '' }) => {
+            const circumference = 2 * Math.PI * 45; // 2 * PI * radius (radius 45 for a 100x100 viewBox)
+
+            return (
+                <svg className={className} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="circularGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#6366F1"/>
+                            <stop offset="100%" stopColor="#EC4899"/>
+                        </linearGradient>
+                    </defs>
+                    <circle
+                        cx="50"
+                        cy="50"
+                        r="45"
+                        stroke="url(#circularGradient)"
+                        strokeWidth="10" /* Thicker stroke */
+                        strokeLinecap="round"
+                        fill="none"
+                        style={{
+                            strokeDasharray: `${circumference} ${circumference}`,
+                            strokeDashoffset: `${circumference}`,
+                            transformOrigin: 'center',
+                            animation: 'circular-dash 1.5s ease-in-out infinite, rotate-loader 3s linear infinite'
+                        }}
+                    />
+                </svg>
+            );
+        };
 
 
         // Custom Dropdown Component
@@ -229,7 +282,8 @@
           const [view, setView] = React.useState('setup');
           const [inputText, setInputText] = React.useState('');
           const [quizData, setQuizData] = React.useState(null);
-          const [loading, setLoading] = React.useState(false);
+          const [loading, setLoading] = React.useState(false); // For quiz generation
+          const [isFileProcessing, setIsFileProcessing] = React.useState(false); // For file extraction
           const [error, setError] = React.useState('');
           const [fileUploadMessage, setFileUploadMessage] = React.useState('');
           // Firebase related states removed: db, auth, userId, isAuthReady, savedQuizzes
@@ -295,7 +349,7 @@
 
             setFileUploadMessage(`Processing "${file.name}"...`);
             setError('');
-            setLoading(true);
+            setIsFileProcessing(true); // Set file processing loading state
 
             try {
                 const fileReadPromise = (fileToRead, readAs) => {
@@ -343,7 +397,7 @@
                 setError(e.message);
                 setFileUploadMessage('');
             } finally {
-                setLoading(false);
+                setIsFileProcessing(false); // Reset file processing loading state
                 event.target.value = null;
             }
           };
@@ -351,9 +405,11 @@
           const generateQuiz = async () => {
             if (!inputText.trim()) { setError("Please provide text to generate a quiz."); return; }
             if (questionTypes.length === 0) { setError("Please select at least one question type."); return; }
-            setLoading(true); 
-            resetQuizState(); 
-            setFileUploadMessage('');
+            
+            resetQuizState(); // Reset quiz state BEFORE setting new loading state
+            setLoading(true); // Set loading for quiz generation
+            setFileUploadMessage(''); // Clear any previous file upload message
+
             try {
               const questionCountDesc = { 'ai': 'an optimal number up to 70', '1-10': '1-10', '10-20': '10-20', '20-30': '20-30', '30-40': '30-40', '40-50': '40-50', '50-60': '50-60', '60-70': '60-70' }[numQuestions];
               const prompt = `Create a quiz from the text below with ${questionCountDesc} questions of these types: ${questionTypes.join(', ')}. Output must be a valid JSON array of question objects.
@@ -364,7 +420,7 @@
               - "long_answer": needs "referenceAnswer" (detailed correct answer).
               Text: ${inputText}`;
               const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } };
-              const apiKey = "AIzaSyCamqljME7F5R92O6Hf-YDbWgy_rXTGk_w"; 
+              const apiKey = ""; // API key is provided by the environment
               const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
               const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
               
@@ -375,7 +431,24 @@
               }
 
               const result = await response.json();
-              const parsedQuiz = JSON.parse(result.candidates[0].content.parts[0].text);
+              let rawQuizText = result.candidates[0].content.parts[0].text;
+
+              // Attempt to clean the JSON string if it's wrapped in markdown code block
+              if (rawQuizText.startsWith('```json') && rawQuizText.endsWith('```')) {
+                  rawQuizText = rawQuizText.substring(7, rawQuizText.length - 3).trim();
+              } else if (rawQuizText.startsWith('```') && rawQuizText.endsWith('```')) {
+                  // Catch generic code blocks too, if the model sometimes forgets 'json'
+                  rawQuizText = rawQuizText.substring(3, rawQuizText.length - 3).trim();
+              }
+
+              let parsedQuiz;
+              try {
+                  parsedQuiz = JSON.parse(rawQuizText);
+              } catch (parseError) {
+                  console.error("JSON Parse error:", parseError);
+                  throw new Error(`Failed to parse quiz data. The AI response might be malformed. Raw response: ${rawQuizText.substring(0, 200)}...`);
+              }
+              
               if (Array.isArray(parsedQuiz) && parsedQuiz.length > 0) {
                 setQuizData(parsedQuiz); setQuizQueue([...parsedQuiz]); setView('quiz');
               } else {
@@ -385,7 +458,7 @@
               console.error("Quiz generation error:", e);
               setError(`Failed to generate quiz. ${e.message}`);
             } finally {
-              setLoading(false);
+              setLoading(false); // Reset loading for quiz generation
             }
           };
 
@@ -394,7 +467,7 @@
             try {
               const prompt = `Evaluate the user's answer. Question: "${question.question}". Reference Answer: "${question.referenceAnswer || question.correctAnswer}". User's Answer: "${userAnswer}". Output JSON with "evaluation" ("correct", "partially correct", "incorrect") and a concise "reason".`;
               const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } };
-              const apiKey = "AIzaSyCamqljME7F5R92O6Hf-YDbWgy_rXTGk_w"; 
+              const apiKey = ""; // API key is provided by the environment
               const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
               const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
               
@@ -405,7 +478,23 @@
               }
 
               const result = await response.json();
-              const parsedEvaluation = JSON.parse(result.candidates[0].content.parts[0].text);
+              let rawEvaluationText = result.candidates[0].content.parts[0].text;
+
+              // Attempt to clean the JSON string if it's wrapped in markdown code block
+              if (rawEvaluationText.startsWith('```json') && rawEvaluationText.endsWith('```')) {
+                  rawEvaluationText = rawEvaluationText.substring(7, rawEvaluationText.length - 3).trim();
+              } else if (rawEvaluationText.startsWith('```') && rawEvaluationText.endsWith('```')) {
+                  rawEvaluationText = rawEvaluationText.substring(3, rawEvaluationText.length - 3).trim();
+              }
+
+              let parsedEvaluation;
+              try {
+                  parsedEvaluation = JSON.parse(rawEvaluationText);
+              } catch (parseError) {
+                  console.error("JSON Parse error on evaluation:", parseError);
+                  throw new Error(`Failed to parse evaluation data. The AI response might be malformed. Raw response: ${rawEvaluationText.substring(0, 200)}...`);
+              }
+
               setEvaluationFeedback(parsedEvaluation);
               let scoreToAdd = 0;
               if (parsedEvaluation.evaluation === "correct") { setIsCorrect(true); scoreToAdd = 1; }
@@ -501,12 +590,12 @@
                 <textarea className="w-full p-4 border-2 border-gray-300 rounded-xl mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-800 transition-all duration-200 hover:border-indigo-400" rows="8" placeholder="Paste your document content here..." value={inputText} onChange={(e) => setInputText(e.target.value)} />
                 {fileUploadMessage && <div className="mb-4 p-3 rounded-lg bg-blue-100 text-blue-800 font-medium text-center shadow-sm">{fileUploadMessage}</div>}
                 <div className="w-full flex flex-col md:flex-row items-center gap-4 mt-2">
-                    <Button3D onClick={() => fileInputRef.current.click()} className="btn-secondary w-full md:w-auto">
-                        <LucideIcon iconName="FileText" className="w-5 h-5" /> Upload File
+                    <Button3D onClick={() => fileInputRef.current.click()} className="btn-secondary w-full md:w-auto" disabled={isFileProcessing}>
+                        <LucideIcon iconName="FileText" className="w-5 h-5" /> {isFileProcessing ? 'Processing File...' : 'Upload File'}
                     </Button3D>
                     <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".txt,.md,.pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
-                    <Button3D onClick={generateQuiz} className="btn-primary w-full md:flex-1">
-                        <LucideIcon iconName="Brain" className="w-5 h-5" /> Generate Quiz
+                    <Button3D onClick={generateQuiz} className="btn-primary w-full md:flex-1" disabled={isFileProcessing || loading}>
+                        <LucideIcon iconName="Brain" className="w-5 h-5" /> {loading ? 'Generating Quiz...' : 'Generate Quiz'}
                     </Button3D>
                 </div>
             </div>
@@ -569,9 +658,15 @@
                 {/* Removed userId display */}
                 {error && (<div className="bg-red-100 border-l-4 border-red-500 text-red-800 p-4 rounded-lg mb-4 shadow-md animate-fade-in" role="alert"><p className="font-bold">Error</p><p>{error}</p></div>)}
                 
-                {loading ? (
+                {isFileProcessing ? ( // Show file processing specific loading screen
                     <div className="bg-white p-6 md:p-8 rounded-2xl shadow-cool w-full max-w-3xl animate-fade-in flex flex-col items-center justify-center min-h-[400px]">
-                        <LucideIcon iconName="Loader2" className="w-16 h-16 text-indigo-500 animate-spin mb-6" />
+                        <LucideIcon iconName="Loader2" className="w-16 h-16 text-blue-500 animate-spin mb-6" />
+                        <h2 className="text-3xl font-bold text-gray-800">Extracting Text</h2>
+                        <p className="text-gray-600 mt-2 text-lg">Please wait while we process your file...</p>
+                    </div>
+                ) : loading ? ( // Show quiz generation loading screen
+                    <div className="bg-white p-6 md:p-8 rounded-2xl shadow-cool w-full max-w-3xl animate-fade-in flex flex-col items-center justify-center min-h-[400px]">
+                        <CircularLoader className="w-24 h-24 mb-6" /> {/* Using the new CircularLoader */}
                         <h2 className="text-3xl font-bold text-gray-800">Generating Your Quiz</h2>
                         <p className="text-gray-600 mt-2 text-lg">The AI is crafting your questions, please wait...</p>
                     </div>
@@ -592,3 +687,4 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 </body>
 </html>
+
