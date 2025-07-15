@@ -328,9 +328,6 @@
             loadScript('https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js', 'mammoth-script');
           }, []);
 
-          // Firebase Initialization and Auth (REMOVED)
-          // Fetch Saved Quizzes (REMOVED)
-
           const resetQuizState = React.useCallback(() => {
             setQuizData(null); setLoading(false); setError(''); setCurrentQuestionIndex(0);
             setSelectedAnswer(null); setFillInBlankAnswer(''); setTextAnswerInput(''); setIsCorrect(null);
@@ -401,14 +398,48 @@
                 event.target.value = null;
             }
           };
+          
+          // Helper for API calls with retry logic for 503 errors
+          const fetchWithRetry = async (url, options, maxRetries = 3) => {
+            let lastError;
+            for (let i = 0; i < maxRetries; i++) {
+              try {
+                const response = await fetch(url, options);
+                if (response.status === 503) {
+                  // Specific error for retrying
+                  throw new Error('Service Unavailable');
+                }
+                // For other non-ok statuses, we'll throw a generic error to be caught below
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error("API Error Response:", errorText);
+                    throw new Error(`API request failed with status ${response.status}`);
+                }
+                return response; // Success
+              } catch (error) {
+                lastError = error;
+                if (error.message === 'Service Unavailable') {
+                  const delay = Math.pow(2, i) * 1000 + Math.random() * 1000; // Exponential backoff with jitter
+                  console.log(`Service unavailable. Retrying in ${Math.round(delay / 1000)}s... (Attempt ${i + 1}/${maxRetries})`);
+                  await new Promise(resolve => setTimeout(resolve, delay));
+                } else {
+                  // For other errors (e.g., network issues, non-503 status codes), fail immediately
+                  throw error;
+                }
+              }
+            }
+            // If all retries fail, throw the last captured error
+            throw lastError;
+          };
+
 
           const generateQuiz = async () => {
             if (!inputText.trim()) { setError("Please provide text to generate a quiz."); return; }
             if (questionTypes.length === 0) { setError("Please select at least one question type."); return; }
             
-            resetQuizState(); // Reset quiz state BEFORE setting new loading state
-            setLoading(true); // Set loading for quiz generation
-            setFileUploadMessage(''); // Clear any previous file upload message
+            resetQuizState();
+            setLoading(true);
+            setFileUploadMessage('');
 
             try {
               const questionCountDesc = { 'ai': 'an optimal number up to 70', '1-10': '1-10', '10-20': '10-20', '20-30': '20-30', '30-40': '30-40', '40-50': '40-50', '50-60': '50-60', '60-70': '60-70' }[numQuestions];
@@ -420,24 +451,17 @@
               - "long_answer": needs "referenceAnswer" (detailed correct answer).
               Text: ${inputText}`;
               const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } };
-              const apiKey = "AIzaSyB4v8PbwqM7UPquJeS1QYQF7aORjFxliik"; // API key is provided by the environment
+              const apiKey = "AIzaSyB4v8PbwqM7UPquJeS1QYQF7aORjFxliik";
               const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-              const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
               
-              if (!response.ok) {
-                const errorText = await response.text();
-                console.error("Gemini API Error on quiz generation:", errorText);
-                throw new Error(`API error: ${response.status}. See console for details.`);
-              }
-
+              const response = await fetchWithRetry(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+              
               const result = await response.json();
               let rawQuizText = result.candidates[0].content.parts[0].text;
 
-              // Attempt to clean the JSON string if it's wrapped in markdown code block
               if (rawQuizText.startsWith('```json') && rawQuizText.endsWith('```')) {
                   rawQuizText = rawQuizText.substring(7, rawQuizText.length - 3).trim();
               } else if (rawQuizText.startsWith('```') && rawQuizText.endsWith('```')) {
-                  // Catch generic code blocks too, if the model sometimes forgets 'json'
                   rawQuizText = rawQuizText.substring(3, rawQuizText.length - 3).trim();
               }
 
@@ -458,7 +482,7 @@
               console.error("Quiz generation error:", e);
               setError(`Failed to generate quiz. ${e.message}`);
             } finally {
-              setLoading(false); // Reset loading for quiz generation
+              setLoading(false);
             }
           };
 
@@ -467,20 +491,14 @@
             try {
               const prompt = `Evaluate the user's answer. Question: "${question.question}". Reference Answer: "${question.referenceAnswer || question.correctAnswer}". User's Answer: "${userAnswer}". Output JSON with "evaluation" ("correct", "partially correct", "incorrect") and a concise "reason".`;
               const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } };
-              const apiKey = "AIzaSyB4v8PbwqM7UPquJeS1QYQF7aORjFxliik"; // API key is provided by the environment
+              const apiKey = "AIzaSyB4v8PbwqM7UPquJeS1QYQF7aORjFxliik";
               const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-              const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-              
-              if (!response.ok) {
-                const errorText = await response.text();
-                console.error("Gemini API Error on evaluation:", errorText);
-                throw new Error(`Evaluation API error: ${response.status}. See console for details.`);
-              }
 
+              const response = await fetchWithRetry(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+              
               const result = await response.json();
               let rawEvaluationText = result.candidates[0].content.parts[0].text;
 
-              // Attempt to clean the JSON string if it's wrapped in markdown code block
               if (rawEvaluationText.startsWith('```json') && rawEvaluationText.endsWith('```')) {
                   rawEvaluationText = rawEvaluationText.substring(7, rawEvaluationText.length - 3).trim();
               } else if (rawEvaluationText.startsWith('```') && rawEvaluationText.endsWith('```')) {
@@ -559,16 +577,11 @@
             }
           };
           
-          // saveQuiz and deleteQuiz functions removed
-
-          // loadQuiz function removed as there are no saved quizzes to load
-
           // --- Render Functions ---
           const renderSetup = () => (
             <div className="bg-white p-6 md:p-8 rounded-2xl shadow-cool w-full max-w-3xl animate-fade-in flex flex-col">
                 <div className="w-full flex justify-between items-center mb-6">
                     <h2 className="text-3xl font-bold text-gray-800 flex items-center"><LucideIcon iconName="Settings" className="mr-3 text-indigo-500"/>Quiz Setup</h2>
-                    {/* Removed "Saved Quizzes" button as Firebase is removed */}
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5 w-full mb-6">
                     <CustomDropdown label="Number of Questions" options={[
@@ -630,19 +643,15 @@
                 <p className="text-2xl text-gray-600 mb-6">Final Score: <span className="font-black text-indigo-600">{score}</span> / <span className="font-black text-gray-500">{quizData.length}</span></p>
                 {(correctionMode === 'end' || correctionMode === 'both') && (<div className="text-left my-8"><h3 className="text-2xl font-bold text-gray-800 mb-4 text-center">Final Report</h3><div className="space-y-4 max-h-80 overflow-y-auto p-4 bg-gray-50 rounded-xl border-2 border-gray-200">{userAnswers.map((ans, index) => (<div key={index} className="p-4 rounded-lg bg-white border"><p className="font-semibold text-gray-700">Q: {ans.question}</p><p className={`mt-2 ${ans.isCorrect || ans.evaluation?.evaluation === 'correct' ? 'text-green-700' : 'text-red-700'}`}>Your answer: <span className="font-mono bg-gray-200 px-2 py-1 rounded">{String(ans.userAnswer)}</span></p>{!(ans.isCorrect || ans.evaluation?.evaluation === 'correct') && (<p className="mt-1 text-blue-700">Correct answer: <span className="font-mono bg-blue-100 px-2 py-1 rounded">{String(ans.correctAnswer || ans.referenceAnswer)}</span></p>)}{ans.evaluation && <p className="mt-1 text-sm text-gray-600">Evaluation: {ans.evaluation.reason}</p>}</div>))}</div></div>)}
                 <div className="flex flex-col md:flex-row justify-center gap-4 mt-8">
-                    {/* Removed "Save Quiz" button as Firebase is removed */}
                     <Button3D onClick={resetToSetup} className="btn-purple"><LucideIcon iconName="Brain" className="w-5 h-5" /> New Quiz</Button3D>
                 </div>
             </div>
           );
 
-          // renderSavedQuizzes function removed
-
           const renderContent = () => {
             switch (view) {
               case 'quiz': return renderQuiz();
               case 'results': return renderResults();
-              // case 'savedQuizzes': return renderSavedQuizzes(); // Removed
               case 'setup': default: return renderSetup();
             }
           };
@@ -655,7 +664,6 @@
                     <h1 className="text-5xl md:text-6xl font-black text-gray-800 text-center tracking-tighter">OmniQuiz AI</h1>
                 </div>
                 <p className="text-center text-gray-500 mb-8 text-lg">Your personal, customizable study partner. ✨</p>
-                {/* Removed userId display */}
                 {error && (<div className="bg-red-100 border-l-4 border-red-500 text-red-800 p-4 rounded-lg mb-4 shadow-md animate-fade-in" role="alert"><p className="font-bold">Error</p><p>{error}</p></div>)}
                 
                 {isFileProcessing ? ( // Show file processing specific loading screen
