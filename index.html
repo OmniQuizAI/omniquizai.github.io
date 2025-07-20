@@ -30,19 +30,6 @@
         @keyframes popIn { from { opacity: 0; transform: scale(0.95) translateY(-10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
         @keyframes bounceSlow { 0%, 100% { transform: translateY(-5%); animation-timing-function: cubic-bezier(0.8, 0, 1, 1); } 50% { transform: translateY(0); animation-timing-function: cubic-bezier(0, 0, 0.2, 1); } }
         
-        /* New splash screen animations */
-        @keyframes splashFadeIn {
-            from { opacity: 0; transform: scale(0.9); }
-            to { opacity: 1; transform: scale(1); }
-        }
-        @keyframes splashFadeOut {
-            from { opacity: 1; }
-            to { opacity: 0; }
-        }
-        .animate-splash-in { animation: splashFadeIn 1s ease-out forwards; }
-        .animate-splash-out { animation: splashFadeOut 0.5s ease-out forwards; }
-
-
         .btn-3d {
           position: relative;
           border: none;
@@ -288,36 +275,6 @@
             </button>
         );
 
-        // New SplashScreen Component
-        const SplashScreen = ({ onAnimationEnd }) => {
-            const [fadeOut, setFadeOut] = React.useState(false);
-
-            React.useEffect(() => {
-                // Start fade out after a delay
-                const timer = setTimeout(() => {
-                    setFadeOut(true);
-                }, 2000); // Display for 2 seconds
-
-                return () => clearTimeout(timer);
-            }, []);
-
-            return (
-                <div 
-                    className={`fixed inset-0 bg-gray-50 bg-grid flex flex-col items-center justify-center z-50 transition-opacity duration-500 ease-out ${fadeOut ? 'animate-splash-out' : 'animate-splash-in'}`}
-                    onAnimationEnd={() => {
-                        if (fadeOut) {
-                            onAnimationEnd();
-                        }
-                    }}
-                >
-                    <div className="flex flex-col items-center justify-center">
-                        <OQLogo className="w-40 h-32 mb-4" />
-                        <h1 className="text-6xl md:text-7xl font-black text-gray-800 text-center tracking-tighter">OmniQuiz AI</h1>
-                        <p className="text-center text-gray-500 mt-4 text-xl">Your personal, customizable study partner. ✨</p>
-                    </div>
-                </div>
-            );
-        };
 
         // --- Main App Component ---
         function App() {
@@ -329,7 +286,6 @@
           const [isFileProcessing, setIsFileProcessing] = React.useState(false); // For file extraction
           const [error, setError] = React.useState('');
           const [fileUploadMessage, setFileUploadMessage] = React.useState('');
-          const [showSplash, setShowSplash] = React.useState(true); // New state for splash screen
           // Firebase related states removed: db, auth, userId, isAuthReady, savedQuizzes
           const [numQuestions, setNumQuestions] = React.useState('ai');
           const [questionTypes, setQuestionTypes] = React.useState(['multiple_choice', 'fill_in_the_blank', 'short_answer']);
@@ -495,7 +451,7 @@
               - "long_answer": needs "referenceAnswer" (detailed correct answer).
               Text: ${inputText}`;
               const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } };
-              const apiKey = "";
+              const apiKey = "AIzaSyB4v8PbwqM7UPquJeS1QYQF7aORjFxliik";
               const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
               
               const response = await fetchWithRetry(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
@@ -535,7 +491,7 @@
             try {
               const prompt = `Evaluate the user's answer. Question: "${question.question}". Reference Answer: "${question.referenceAnswer || question.correctAnswer}". User's Answer: "${userAnswer}". Output JSON with "evaluation" ("correct", "partially correct", "incorrect") and a concise "reason".`;
               const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } };
-              const apiKey = "";
+              const apiKey = "AIzaSyB4v8PbwqM7UPquJeS1QYQF7aORjFxliik";
               const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
               const response = await fetchWithRetry(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
@@ -702,31 +658,30 @@
 
           return (
             <div className="min-h-screen bg-gray-50 bg-grid flex flex-col items-center justify-center p-4 font-sans selection:bg-indigo-200">
-                {showSplash && <SplashScreen onAnimationEnd={() => setShowSplash(false)} />}
-                <div className={`w-full max-w-3xl mx-auto transition-opacity duration-500 ease-out ${showSplash ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-                    <div className="flex justify-center items-center gap-2 mb-4">
-                        <OQLogo className="w-28 h-20" />
-                        <h1 className="text-5xl md:text-6xl font-black text-gray-800 text-center tracking-tighter">OmniQuiz AI</h1>
-                    </div>
-                    <p className="text-center text-gray-500 mb-8 text-lg">Your personal, customizable study partner. ✨</p>
-                    {error && (<div className="bg-red-100 border-l-4 border-red-500 text-red-800 p-4 rounded-lg mb-4 shadow-md animate-fade-in" role="alert"><p className="font-bold">Error</p><p>{error}</p></div>)}
-                    
-                    {isFileProcessing ? ( // Show file processing specific loading screen
-                        <div className="bg-white p-6 md:p-8 rounded-2xl shadow-cool w-full max-w-3xl animate-fade-in flex flex-col items-center justify-center min-h-[400px]">
-                            <LucideIcon iconName="Loader2" className="w-16 h-16 text-blue-500 animate-spin mb-6" />
-                            <h2 className="text-3xl font-bold text-gray-800">Extracting Text</h2>
-                            <p className="text-gray-600 mt-2 text-lg">Please wait while we process your file...</p>
-                        </div>
-                    ) : loading ? ( // Show quiz generation loading screen
-                        <div className="bg-white p-6 md:p-8 rounded-2xl shadow-cool w-full max-w-3xl animate-fade-in flex flex-col items-center justify-center min-h-[400px]">
-                            <CircularLoader className="w-24 h-24 mb-6" /> {/* Using the new CircularLoader */}
-                            <h2 className="text-3xl font-bold text-gray-800">Generating Your Quiz</h2>
-                            <p className="text-gray-600 mt-2 text-lg">The AI is crafting your questions, please wait...</p>
-                        </div>
-                    ) : (
-                        renderContent()
-                    )}
+              <div className="w-full max-w-3xl mx-auto">
+                <div className="flex justify-center items-center gap-2 mb-4">
+                    <OQLogo className="w-28 h-20" />
+                    <h1 className="text-5xl md:text-6xl font-black text-gray-800 text-center tracking-tighter">OmniQuiz AI</h1>
                 </div>
+                <p className="text-center text-gray-500 mb-8 text-lg">Your personal, customizable study partner. ✨</p>
+                {error && (<div className="bg-red-100 border-l-4 border-red-500 text-red-800 p-4 rounded-lg mb-4 shadow-md animate-fade-in" role="alert"><p className="font-bold">Error</p><p>{error}</p></div>)}
+                
+                {isFileProcessing ? ( // Show file processing specific loading screen
+                    <div className="bg-white p-6 md:p-8 rounded-2xl shadow-cool w-full max-w-3xl animate-fade-in flex flex-col items-center justify-center min-h-[400px]">
+                        <LucideIcon iconName="Loader2" className="w-16 h-16 text-blue-500 animate-spin mb-6" />
+                        <h2 className="text-3xl font-bold text-gray-800">Extracting Text</h2>
+                        <p className="text-gray-600 mt-2 text-lg">Please wait while we process your file...</p>
+                    </div>
+                ) : loading ? ( // Show quiz generation loading screen
+                    <div className="bg-white p-6 md:p-8 rounded-2xl shadow-cool w-full max-w-3xl animate-fade-in flex flex-col items-center justify-center min-h-[400px]">
+                        <CircularLoader className="w-24 h-24 mb-6" /> {/* Using the new CircularLoader */}
+                        <h2 className="text-3xl font-bold text-gray-800">Generating Your Quiz</h2>
+                        <p className="text-gray-600 mt-2 text-lg">The AI is crafting your questions, please wait...</p>
+                    </div>
+                ) : (
+                    renderContent()
+                )}
+              </div>
             </div>
           );
         }
