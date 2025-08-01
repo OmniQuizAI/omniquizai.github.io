@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Privacy Policy | OmniQuizAI</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      line-height: 1.6;
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 1rem;
+      color: #333;
+    }
+    h1, h2 {
+      color: #1a1a1a;
+    }
+    a {
+      color: #0066cc;
+    }
+  </style>
+</head>
+<body>
+  <h1>Privacy Policy</h1>
+  <p><strong>Effective Date:</strong> August 1, 2025<br />
+     <strong>Website:</strong> <a href="https://omniquizai.github.io" target="_blank">https://omniquizai.github.io</a></p>
+
+  <h2>1. Introduction</h2>
+  <p>Welcome to OmniQuizAI! Your privacy is important to us. This Privacy Policy explains how information is collected and used when you visit our website. We do <strong>not collect any personal data</strong> from users directly. However, we use <strong>Google AdSense</strong>, which may collect anonymous usage data through cookies.</p>
+
+  <h2>2. Information We Do Not Collect</h2>
+  <p>We do <strong>not</strong> collect:</p>
+  <ul>
+    <li>Names, email addresses, or login credentials</li>
+    <li>Quiz responses or personal user input</li>
+    <li>Any personally identifiable information (PII)</li>
+  </ul>
+
+  <h2>3. Google AdSense and Third-Party Cookies</h2>
+  <p>This website uses <strong>Google AdSense</strong> to display ads. AdSense may use cookies or similar technologies to personalize ads based on your visit to this and other websites. This may include:</p>
+  <ul>
+    <li>Tracking non-personal data such as device type, browser, IP address (anonymized)</li>
+    <li>Serving personalized or interest-based ads (depending on your settings)</li>
+  </ul>
+  <p>Learn more here:<br />
+    <a href="https://policies.google.com/technologies/partner-sites" target="_blank">
+      How Google uses information from sites or apps that use its services
+    </a><br />
+    <a href="https://adssettings.google.com" target="_blank">
+      Manage your ad settings on Google
+    </a>
+  </p>
+
+  <h2>4. Cookies</h2>
+  <p>Cookies may be used to:</p>
+  <ul>
+    <li>Serve and personalize ads</li>
+    <li>Measure ad effectiveness and website performance</li>
+  </ul>
+  <p>By using this site, you consent to the use of cookies unless you disable them in your browser settings.</p>
+
+  <h2>5. Data Security</h2>
+  <p>We do not collect or store user data directly. Any third-party data collection (such as by Google) is governed by their respective privacy policies.</p>
+
+  <h2>6. Children’s Privacy</h2>
+  <p>This website is not intended for children under 13. We do not knowingly collect personal data from children.</p>
+
+  <h2>7. Changes to This Policy</h2>
+  <p>We may update this Privacy Policy from time to time. The latest version will always be posted on this page with an updated effective date.</p>
+
+  <h2>8. Contact</h2>
+  <p>For any questions about this Privacy Policy, please contact us at:<br />
+    <a href="mailto:your-email@example.com">your-email@example.com</a>
+  </p>
+</body>
+</html>
