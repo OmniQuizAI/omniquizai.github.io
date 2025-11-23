@@ -1,3 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9891952889259620"
+     crossorigin="anonymous"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OmniQuiz AI</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts - Poppins -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- React & ReactDOM CDNs -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel CDN for JSX transformation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        /* Custom CSS for the application */
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap');
+        .font-sans { font-family: 'Poppins', sans-serif; }
+        .bg-grid { background-image: linear-gradient(to right, #e5e7eb 1px, transparent 1px), linear-gradient(to bottom, #e5e7eb 1px, transparent 1px); background-size: 2rem 2rem; }
+        .shadow-cool { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(0,0,0,0.05); }
+        .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        .animate-pop-in { animation: popIn 0.3s ease-out forwards; }
+        .animate-bounce-slow { animation: bounceSlow 2s infinite; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes popIn { from { opacity: 0; transform: scale(0.95) translateY(-10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        @keyframes bounceSlow { 0%, 100% { transform: translateY(-5%); animation-timing-function: cubic-bezier(0.8, 0, 1, 1); } 50% { transform: translateY(0); animation-timing-function: cubic-bezier([...]
+        
+        .btn-3d {
+          position: relative;
+          border: none;
+          outline: none;
+          cursor: pointer;
+          border-radius: 12px;
+          padding: 0.75rem 1.5rem;
+          font-weight: 700;
+          transition: transform 0.1s ease-in-out, box-shadow 0.1s ease-in-out;
+          transform-style: preserve-3d;
+        }
+        .btn-3d:active {
+          transform: translateY(4px);
+        }
+        .btn-3d-text {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+        }
+        
+        .btn-primary { background-color: #4f46e5; color: white; border-bottom: 6px solid #3730a3; }
+        .btn-primary:hover { transform: translateY(-2px); border-bottom-width: 8px; }
+        .btn-primary:active { border-bottom-width: 2px; }
+
+        .btn-secondary { background-color: #e5e7eb; color: #374151; border-bottom: 6px solid #9ca3af; }
+        .btn-secondary:hover { transform: translateY(-2px); border-bottom-width: 8px; }
+        .btn-secondary:active { border-bottom-width: 2px; }
+
+        .btn-purple { background-color: #9333ea; color: white; border-bottom: 6px solid #6b21a8; }
+        .btn-purple:hover { transform: translateY(-2px); border-bottom-width: 8px; }
+        .btn-purple:active { border-bottom-width: 2px; }
+
+        .btn-green { background-color: #22c55e; color: white; border-bottom: 6px solid #15803d; }
+        .btn-green:hover { transform: translateY(-2px); border-bottom-width: 8px; }
+        .btn-green:active { border-bottom-width: 2px; }
+
+        .btn-3d:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: translateY(0) !important;
+            border-bottom-width: 6px !important;
+        }
+        .btn-3d:disabled .btn-3d-text {
+            cursor: not-allowed;
+        }
+
+        /* Keyframes for the circular loader animation */
+        @keyframes circular-dash {
+            0% {
+                stroke-dashoffset: 282.7; /* Circumference of a circle with radius 45 (2 * PI * 45) */
+                transform: rotate(0deg);
+            }
+            50% {
+                stroke-dashoffset: 0;
+                transform: rotate(360deg);
+            }
+            100% {
+                stroke-dashoffset: -282.7; /* Negative offset to continue rotation */
+                transform: rotate(720deg);
+            }
+        }
+
+        /* Keyframes for the full rotation of the loader */
+        @keyframes rotate-loader {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // Helper function to create Lucide icons as inline SVGs
+        // Note: Lucide React components (Brain, FileText, etc.) are replaced with
+        // a custom LucideIcon component that renders inline SVGs, as direct imports
+        // are not available in a single HTML file using Babel standalone.
+        const LucideIcon = ({ iconName, className = '' }) => {
+            const icons = {
+                Brain: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="ro[...]
+                FileText: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin=[...]
+                Send: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="rou[...]
+                Loader2: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="[...]
+                XCircle: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="[...]
+                CheckCircle: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejo[...]
+                Trophy: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="r[...]
+                MessageSquare: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-line[...]
+                Settings: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin=[...]
+                ChevronDown: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejo[...]
+                Check: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="ro[...]
+                History: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="[...]
+                ArrowRight: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoi[...]
+            };
+            return <span className={className} dangerouslySetInnerHTML={{ __html: icons[iconName] || '' }} />;
+        };
+
+        // --- Helper Components ---
+
+        // Updated & Fixed OQ Logo Component
+        const OQLogo = ({ className }) => (
+            <svg className={className} viewBox="-15 -15 130 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="logoGradient" x1="0" y1="0" x2="1" y2="1">
+                        <stop stopColor="#6366F1"/>
+                        <stop offset="1" stopColor="#EC4899"/>
+                    </linearGradient>
+                    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                        <feMerge>
+                            <feMergeNode in="coloredBlur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                    </filter>
+                </defs>
+                <g stroke="url(#logoGradient)" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round">
+                    {/* O */}
+                    <path d="M50 30C50 15.6406 38.8071 4 25 4C11.1929 4 0 15.6406 0 30C0 44.3594 11.1929 56 25 56C38.8071 56 50 44.3594 50 30Z" style={{ filter: 'url(#glow)' }}/>
+                    {/* Q */}
+                    <path d="M100 30C100 15.6406 88.8071 4 75 4C61.1929 4 50 15.6406 50 30C50 44.3594 61.1929 56 75 56C88.8071 56 100 44.3594 100 30Z" style={{ filter: 'url(#glow)' }}/>
+                    {/* Q Tail */}
+                    <path d="M85 46L98 59" strokeWidth="10"/>
+                </g>
+            </svg>
+        );
+
+        // Circular Loader Component
+        const CircularLoader = ({ className = '' }) => {
+            const circumference = 2 * Math.PI * 45; // 2 * PI * radius (radius 45 for a 100x100 viewBox)
+
+            return (
+                <svg className={className} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="circularGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#6366F1"/>
+                            <stop offset="100%" stopColor="#EC4899"/>
+                        </linearGradient>
+                    </defs>
+                    <circle
+                        cx="50"
+                        cy="50"
+                        r="45"
+                        stroke="url(#circularGradient)"
+                        strokeWidth="10" /* Thicker stroke */
+                        strokeLinecap="round"
+                        fill="none"
+                        style={{
+                            strokeDasharray: `${circumference} ${circumference}`,
+                            strokeDashoffset: `${circumference}`,
+                            transformOrigin: 'center',
+                            animation: 'circular-dash 1.5s ease-in-out infinite, rotate-loader 3s linear infinite'
+                        }}
+                    />
+                </svg>
+            );
+        };
+
+
+        // Custom Dropdown Component
+        const CustomDropdown = ({ label, options, selected, onSelect }) => {
+          const [isOpen, setIsOpen] = React.useState(false);
+          const dropdownRef = React.useRef(null);
+          React.useEffect(() => {
+            const handleClickOutside = (event) => {
+              if (dropdownRef.current && !dropdownRef.current.contains(event.target)) setIsOpen(false);
+            };
+            document.addEventListener("mousedown", handleClickOutside);
+            return () => document.removeEventListener("mousedown", handleClickOutside);
+          }, []);
+          return (
+            <div className="relative w-full" ref={dropdownRef}>
+              <label className="block text-sm font-semibold text-gray-600 mb-2">{label}</label>
+              <button onClick={() => setIsOpen(!isOpen)} className="w-full bg-white border-2 border-gray-300 rounded-xl px-4 py-3 text-left flex items-center justify-between focus:outline-none focus:r[...]
+                <span className="text-gray-800 font-medium">{options.find(o => o.value === selected)?.label || 'Select...'}</span>
+                <LucideIcon iconName="ChevronDown" className={`w-5 h-5 text-gray-500 transition-transform duration-300 ${isOpen ? 'transform rotate-180' : ''}`} />
+              </button>
+              {isOpen && (
+                <div className="absolute z-10 mt-2 w-full bg-white shadow-2xl rounded-xl border border-gray-200 animate-pop-in">
+                  <ul className="py-2">
+                    {options.map((option) => (
+                      <li key={option.value} onClick={() => { onSelect(option.value); setIsOpen(false); }} className="px-4 py-3 text-gray-700 hover:bg-indigo-50 cursor-pointer flex items-center justif[...]
+                        {option.label}
+                        {selected === option.value && <LucideIcon iconName="Check" className="w-5 h-5 text-indigo-600" />}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          );
+        };
+
+        // Custom Multi-Select Dropdown
+        const MultiSelectDropdown = ({ label, options, selected, onToggle }) => {
+            const [isOpen, setIsOpen] = React.useState(false);
+            const dropdownRef = React.useRef(null);
+            React.useEffect(() => {
+                const handleClickOutside = (event) => {
+                    if (dropdownRef.current && !dropdownRef.current.contains(event.target)) setIsOpen(false);
+                };
+                document.addEventListener("mousedown", handleClickOutside);
+                return () => document.removeEventListener("mousedown", handleClickOutside);
+            }, []);
+            const selectedLabels = options.filter(o => selected.includes(o.value)).map(o => o.label).join(', ');
+            return (
+                <div className="relative w-full" ref={dropdownRef}>
+                    <label className="block text-sm font-semibold text-gray-600 mb-2">{label}</label>
+                    <button onClick={() => setIsOpen(!isOpen)} className="w-full bg-white border-2 border-gray-300 rounded-xl px-4 py-3 text-left flex items-center justify-between focus:outline-none f[...]
+                        <span className="text-gray-800 font-medium truncate">{selectedLabels || 'Select...'}</span>
+                        <LucideIcon iconName="ChevronDown" className={`w-5 h-5 text-gray-500 transition-transform duration-300 ${isOpen ? 'transform rotate-180' : ''}`} />
+                    </button>
+                    {isOpen && (
+                        <div className="absolute z-10 mt-2 w-full bg-white shadow-2xl rounded-xl border border-gray-200 animate-pop-in">
+                            <ul className="py-2">
+                                {options.map((option) => (
+                                    <li key={option.value} onClick={() => onToggle(option.value)} className="px-4 py-3 text-gray-700 hover:bg-indigo-50 cursor-pointer flex items-center transition-colo[...]
+                                        <input id={`checkbox-${option.value}`} type="checkbox" checked={selected.includes(option.value)} readOnly className="h-5 w-5 rounded-md border-gray-400 text-ind[...]
+                                        <label htmlFor={`checkbox-${option.value}`} className="ml-3 text-gray-700 cursor-pointer w-full font-medium">{option.label}</label>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // Toggle Switch Component
+        const ToggleSwitch = ({ label, enabled, onToggle }) => (
+          <div className="w-full">
+            <label className="block text-sm font-semibold text-gray-600 mb-2">{label}</label>
+            <button onClick={onToggle} className={`relative inline-flex items-center h-8 rounded-full w-14 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 $[...]
+              <span className="sr-only">{label}</span>
+              <span className={`inline-block w-6 h-6 transform bg-white rounded-full transition-transform duration-300 ease-in-out ${enabled ? 'translate-x-7' : 'translate-x-1'}`} />
+            </button>
+          </div>
+        );
+
+        // 3D Button Component
+        const Button3D = ({ onClick, children, className = '', disabled = false }) => (
+            <button onClick={onClick} disabled={disabled} className={`btn-3d ${className}`}>
+                <span className="btn-3d-text">{children}</span>
+            </button>
+        );
+
+
+        // --- Main App Component ---
+        function App() {
+          // State Variables
+          const [view, setView] = React.useState('setup');
+          const [inputText, setInputText] = React.useState('');
+          const [quizData, setQuizData] = React.useState(null);
+          const [loading, setLoading] = React.useState(false); // For quiz generation
+          const [isFileProcessing, setIsFileProcessing] = React.useState(false); // For file extraction
+          const [error, setError] = React.useState('');
+          const [fileUploadMessage, setFileUploadMessage] = React.useState('');
+          // Firebase related states removed: db, auth, userId, isAuthReady, savedQuizzes
+          const [numQuestions, setNumQuestions] = React.useState('ai');
+          const [questionTypes, setQuestionTypes] = React.useState(['multiple_choice', 'fill_in_the_blank', 'short_answer']);
+          const [correctionMode, setCorrectionMode] = React.useState('immediate');
+          const [isSpacedRepetition, setIsSpacedRepetition] = React.useState(false);
+          const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
+          const [score, setScore] = React.useState(0);
+          const [userAnswers, setUserAnswers] = React.useState([]);
+          const [incorrectlyAnswered, setIncorrectlyAnswered] = React.useState([]);
+          const [quizQueue, setQuizQueue] = React.useState([]);
+          const [selectedAnswer, setSelectedAnswer] = React.useState(null);
+          const [fillInBlankAnswer, setFillInBlankAnswer] = React.useState('');
+          const [textAnswerInput, setTextAnswerInput] = React.useState('');
+          const [isCorrect, setIsCorrect] = React.useState(null);
+          const [evaluationFeedback, setEvaluationFeedback] = React.useState(null);
+          const [isEvaluating, setIsEvaluating] = React.useState(false);
+
+          const fileInputRef = React.useRef(null);
+
+          // Load external libraries for file processing
+          React.useEffect(() => {
+            const loadScript = (src, id, onLoad) => {
+                if (document.getElementById(id)) {
+                    if (onLoad) onLoad();
+                    return;
+                }
+                const script = document.createElement('script');
+                script.src = src;
+                script.id = id;
+                script.onload = onLoad;
+                script.onerror = () => setError(`Failed to load a required library for file processing. Please try pasting text manually.`);
+                document.head.appendChild(script);
+            };
+
+            loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js', 'pdfjs-script', () => {
+                if (window.pdfjsLib) {
+                    window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+                }
+            });
+            loadScript('https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js', 'mammoth-script');
+          }, []);
+
+          const resetQuizState = React.useCallback(() => {
+            setQuizData(null); setLoading(false); setError(''); setCurrentQuestionIndex(0);
+            setSelectedAnswer(null); setFillInBlankAnswer(''); setTextAnswerInput(''); setIsCorrect(null);
+            setScore(0); setUserAnswers([]); setEvaluationFeedback(null); setIsEvaluating(false);
+            setIncorrectlyAnswered([]); setQuizQueue([]);
+          }, []);
+
+          const resetToSetup = React.useCallback(() => {
+            resetQuizState(); setInputText(''); setFileUploadMessage(''); setView('setup');
+          }, [resetQuizState]);
+
+          // Enhanced file upload handler with proper async/await
+          const handleFileUpload = async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            setFileUploadMessage(`Processing "${file.name}"...`);
+            setError('');
+            setIsFileProcessing(true); // Set file processing loading state
+
+            try {
+                const fileReadPromise = (fileToRead, readAs) => {
+                    return new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = reject;
+                        if (readAs === 'text') {
+                            reader.readAsText(fileToRead);
+                        } else if (readAs === 'arrayBuffer') {
+                            reader.readAsArrayBuffer(fileToRead);
+                        } else {
+                            reject(new Error("Invalid file read method."));
+                        }
+                    });
+                };
+
+                if (file.type === 'text/plain' || file.name.endsWith('.md')) {
+                    const text = await fileReadPromise(file, 'text');
+                    setInputText(text);
+                    setFileUploadMessage(`"${file.name}" loaded successfully!`);
+                } else if (file.type === 'application/pdf') {
+                    if (!window.pdfjsLib) throw new Error("PDF processing library not loaded.");
+                    const buffer = await fileReadPromise(file, 'arrayBuffer');
+                    const typedarray = new Uint8Array(buffer);
+                    const pdf = await window.pdfjsLib.getDocument({ data: typedarray }).promise;
+                    let fullText = '';
+                    for (let i = 1; i <= pdf.numPages; i++) {
+                        const page = await pdf.getPage(i);
+                        const textContent = await page.getTextContent();
+                        fullText += textContent.items.map(item => item.str).join(' ') + '\n';
+                    }
+                    setInputText(fullText.trim());
+                    setFileUploadMessage(`Text extracted from "${file.name}"!`);
+                } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+                    if (!window.mammoth) throw new Error("DOCX processing library not loaded.");
+                    const buffer = await fileReadPromise(file, 'arrayBuffer');
+                    const result = await window.mammoth.extractRawText({ arrayBuffer: buffer });
+                    setInputText(result.value);
+                    setFileUploadMessage(`Text extracted from "${file.name}"!`);
+                } else {
+                    throw new Error("Unsupported file type. Please use .txt, .md, .pdf, or .docx.");
+                }
+            } catch (e) {
+                setError(e.message);
+                setFileUploadMessage('');
+            } finally {
+                setIsFileProcessing(false); // Reset file processing loading state
+                event.target.value = null;
+            }
+          };
+          
+          // Helper for API calls with retry logic for 503 errors
+          const fetchWithRetry = async (url, options, maxRetries = 3) => {
+            let lastError;
+            for (let i = 0; i < maxRetries; i++) {
+              try {
+                const response = await fetch(url, options);
+                if (response.status === 503) {
+                  // Specific error for retrying
+                  throw new Error('Service Unavailable');
+                }
+                // For other non-ok statuses, we'll throw a generic error to be caught below
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error("API Error Response:", errorText);
+                    throw new Error(`API request failed with status ${response.status}`);
+                }
+                return response; // Success
+              } catch (error) {
+                lastError = error;
+                if (error.message === 'Service Unavailable') {
+                  const delay = Math.pow(2, i) * 1000 + Math.random() * 1000; // Exponential backoff with jitter
+                  console.log(`Service unavailable. Retrying in ${Math.round(delay / 1000)}s... (Attempt ${i + 1}/${maxRetries})`);
+                  await new Promise(resolve => setTimeout(resolve, delay));
+                } else {
+                  // For other errors (e.g., network issues, non-503 status codes), fail immediately
+                  throw error;
+                }
+              }
+            }
+            // If all retries fail, throw the last captured error
+            throw lastError;
+          };
+
+
+          const generateQuiz = async () => {
+            if (!inputText.trim()) { setError("Please provide text to generate a quiz."); return; }
+            if (questionTypes.length === 0) { setError("Please select at least one question type."); return; }
+            
+            resetQuizState();
+            setLoading(true);
+            setFileUploadMessage('');
+
+            try {
+              const questionCountDesc = { 'ai': 'an optimal number up to 70', '1-10': '1-10', '10-20': '10-20', '20-30': '20-30', '30-40': '30-40', '40-50': '40-50', '50-60': '50-60', '60-70': '60-70'[...]
+              const prompt = `Create a quiz from the text below with ${questionCountDesc} questions of these types: ${questionTypes.join(', ')}. Output must be a valid JSON array of question objects.
+              - "multiple_choice": needs "options" (array of 4 strings) and "correctAnswer" (string).
               - "true_false": needs "correctAnswer" (boolean).
               - "fill_in_the_blank": needs "question" with "___" and "correctAnswer" (string for the blank).
               - "short_answer": needs "referenceAnswer" (concise correct answer).
@@ -42,7 +489,7 @@
           const evaluateTextAnswer = async (userAnswer, question) => {
             setIsEvaluating(true); setEvaluationFeedback(null);
             try {
-              const prompt = `Evaluate the user's answer. Question: "${question.question}". Reference Answer: "${question.referenceAnswer || question.correctAnswer}". User's Answer: "${userAnswer}". Output JSON with "evaluation" ("correct", "partially correct", "incorrect") and a concise "reason".`;
+              const prompt = `Evaluate the user's answer. Question: "${question.question}". Reference Answer: "${question.referenceAnswer || question.correctAnswer}". User's Answer: "${userAnswer}". O[...]
               const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } };
               const apiKey = "AIzaSyDhF81uX1JMsQhpqiMtVzvJbvVqpywhyAs";
               const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
@@ -51,3 +498,200 @@
               
               const result = await response.json();
               let rawEvaluationText = result.candidates[0].content.parts[0].text;
+
+              if (rawEvaluationText.startsWith('```json') && rawEvaluationText.endsWith('```')) {
+                  rawEvaluationText = rawEvaluationText.substring(7, rawEvaluationText.length - 3).trim();
+              } else if (rawEvaluationText.startsWith('```') && rawEvaluationText.endsWith('```')) {
+                  rawEvaluationText = rawEvaluationText.substring(3, rawEvaluationText.length - 3).trim();
+              }
+
+              let parsedEvaluation;
+              try {
+                  parsedEvaluation = JSON.parse(rawEvaluationText);
+              } catch (parseError) {
+                  console.error("JSON Parse error on evaluation:", parseError);
+                  throw new Error(`Failed to parse evaluation data. The AI response might be malformed. Raw response: ${rawEvaluationText.substring(0, 200)}...`);
+              }
+
+              setEvaluationFeedback(parsedEvaluation);
+              let scoreToAdd = 0;
+              if (parsedEvaluation.evaluation === "correct") { setIsCorrect(true); scoreToAdd = 1; }
+              else if (parsedEvaluation.evaluation === "partially correct") { setIsCorrect(null); scoreToAdd = 0.5; }
+              else { setIsCorrect(false); }
+              if (correctionMode !== 'end') setScore(prev => prev + scoreToAdd);
+              setUserAnswers(prev => [...prev, { ...question, userAnswer, evaluation: parsedEvaluation, scoreAdded: scoreToAdd }]);
+            } catch (e) {
+              console.error("Evaluation error:", e);
+              setError(`Failed to evaluate answer. ${e.message}`);
+              setIsCorrect(null);
+              setUserAnswers(prev => [...prev, { ...question, userAnswer, evaluation: { evaluation: 'error', reason: 'Evaluation failed.' }, scoreAdded: 0 }]);
+            } finally {
+              setIsEvaluating(false);
+            }
+          };
+
+          const handleSubmitAnswer = () => {
+            const question = quizQueue[currentQuestionIndex];
+            let isAnswerCorrect = null, scoreToAdd = 0, userAnswer;
+            switch (question.type) {
+              case 'multiple_choice':
+              case 'true_false':
+                if (selectedAnswer === null) { setError("Please select an answer."); return; }
+                userAnswer = selectedAnswer; isAnswerCorrect = userAnswer === question.correctAnswer;
+                break;
+              case 'fill_in_the_blank':
+                if (!fillInBlankAnswer.trim()) { setError("Please fill in the blank."); return; }
+                evaluateTextAnswer(fillInBlankAnswer.trim(), question); return;
+              case 'short_answer':
+              case 'long_answer':
+                if (!textAnswerInput.trim()) { setError("Please enter your answer."); return; }
+                evaluateTextAnswer(textAnswerInput.trim(), question); return;
+              default: return;
+            }
+            if (isAnswerCorrect !== null) {
+              setIsCorrect(isAnswerCorrect);
+              if (isAnswerCorrect) scoreToAdd = 1;
+              if (correctionMode !== 'end') setScore(prev => prev + scoreToAdd);
+              setUserAnswers(prev => [...prev, { ...question, userAnswer, isCorrect: isAnswerCorrect, scoreAdded: scoreToAdd }]);
+            }
+            setError('');
+          };
+
+          const handleNextQuestion = () => {
+            if (isSpacedRepetition && isCorrect === false) {
+              setIncorrectlyAnswered(prev => [...prev, quizQueue[currentQuestionIndex]]);
+            }
+            setSelectedAnswer(null); setFillInBlankAnswer(''); setTextAnswerInput(''); setIsCorrect(null); setEvaluationFeedback(null);
+            if (currentQuestionIndex < quizQueue.length - 1) {
+              setCurrentQuestionIndex(prev => prev + 1);
+            } else {
+              if (isSpacedRepetition && incorrectlyAnswered.length > 0) {
+                setQuizQueue([...incorrectlyAnswered]); setIncorrectlyAnswered([]); setCurrentQuestionIndex(0);
+              } else {
+                if (correctionMode === 'end' || correctionMode === 'both') {
+                    const finalScore = userAnswers.reduce((total, ans) => total + (ans.scoreAdded || 0), 0);
+                    setScore(finalScore);
+                }
+                setView('results');
+              }
+            }
+          };
+          
+          // --- Render Functions ---
+          const renderSetup = () => (
+            <div className="bg-white p-6 md:p-8 rounded-2xl shadow-cool w-full max-w-3xl animate-fade-in flex flex-col">
+                <div className="w-full flex justify-between items-center mb-6">
+                    <h2 className="text-3xl font-bold text-gray-800 flex items-center"><LucideIcon iconName="Settings" className="mr-3 text-indigo-500"/>Quiz Setup</h2>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5 w-full mb-6">
+                    <CustomDropdown label="Number of Questions" options={[
+                        {value: 'ai', label: 'AI Chosen Best'}, {value: '1-10', label: '1-10'}, {value: '10-20', label: '10-20'},
+                        {value: '20-30', label: '20-30'}, {value: '30-40', label: '30-40'}, {value: '40-50', label: '40-50'},
+                        {value: '50-60', label: '50-60'}, {value: '60-70', label: '60-70'}
+                    ]} selected={numQuestions} onSelect={setNumQuestions} />
+                    <MultiSelectDropdown label="Question Types" options={[
+                        {value: 'multiple_choice', label: 'Multiple Choice'}, {value: 'true_false', label: 'True / False'},
+                        {value: 'fill_in_the_blank', label: 'Fill in the Blank'}, {value: 'short_answer', label: 'Short Answer'},
+                        {value: 'long_answer', label: 'Long Answer'}
+                    ]} selected={questionTypes} onToggle={(type) => setQuestionTypes(prev => prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type])} />
+                    <CustomDropdown label="Correction Style" options={[
+                        {value: 'immediate', label: 'Correct After Each Question'}, {value: 'end', label: 'Evaluate at End'},
+                        {value: 'both', label: 'Immediate and Final Report'}
+                    ]} selected={correctionMode} onSelect={setCorrectionMode} />
+                    <ToggleSwitch label="Spaced Repetition" enabled={isSpacedRepetition} onToggle={() => setIsSpacedRepetition(!isSpacedRepetition)} />
+                </div>
+                <textarea className="w-full p-4 border-2 border-gray-300 rounded-xl mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-800 transition-all duration-200 hover:border-in[...]
+                {fileUploadMessage && <div className="mb-4 p-3 rounded-lg bg-blue-100 text-blue-800 font-medium text-center shadow-sm">{fileUploadMessage}</div>}
+                <div className="w-full flex flex-col md:flex-row items-center gap-4 mt-2">
+                    <Button3D onClick={() => fileInputRef.current.click()} className="btn-secondary w-full md:w-auto" disabled={isFileProcessing}>
+                        <LucideIcon iconName="FileText" className="w-5 h-5" /> {isFileProcessing ? 'Processing File...' : 'Upload File'}
+                    </Button3D>
+                    <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".txt,.md,.pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordp[...]
+                    <Button3D onClick={generateQuiz} className="btn-primary w-full md:flex-1" disabled={isFileProcessing || loading}>
+                        <LucideIcon iconName="Brain" className="w-5 h-5" /> {loading ? 'Generating Quiz...' : 'Generate Quiz'}
+                    </Button3D>
+                </div>
+            </div>
+          );
+
+          const renderQuiz = () => {
+            if (!quizQueue || quizQueue.length === 0) return null;
+            const question = quizQueue[currentQuestionIndex];
+            const showFeedback = correctionMode !== 'end' && (isCorrect !== null || evaluationFeedback !== null);
+            const canProceed = isCorrect !== null || evaluationFeedback !== null;
+            return (
+              <div className="bg-white p-6 rounded-2xl shadow-cool w-full max-w-2xl animate-fade-in">
+                <div className="mb-4 text-sm text-gray-600 flex justify-between items-center">
+                  <span className="font-semibold">Question {currentQuestionIndex + 1} of {quizQueue.length}</span>
+                  <span className="px-3 py-1 bg-indigo-100 text-indigo-800 text-xs font-bold rounded-full capitalize tracking-wider">{question.type.replace('_', ' ')}</span>
+                </div>
+                <h2 className="text-2xl font-bold mb-6 text-gray-800">{question.question}</h2>
+                {question.type === 'multiple_choice' && (<div className="grid grid-cols-1 md:grid-cols-2 gap-4">{question.options.map((option, index) => (<button key={index} onClick={() => setSelected[...]
+                {question.type === 'true_false' && (<div className="flex gap-4">{[true, false].map(option => (<button key={String(option)} onClick={() => setSelectedAnswer(option)} disabled={canProcee[...]
+                {question.type === 'fill_in_the_blank' && (<input type="text" value={fillInBlankAnswer} onChange={(e) => setFillInBlankAnswer(e.target.value)} disabled={canProceed || isEvaluating} cla[...]
+                {(question.type === 'short_answer' || question.type === 'long_answer') && (<textarea value={textAnswerInput} onChange={(e) => setTextAnswerInput(e.target.value)} disabled={canProceed |[...]
+                {showFeedback && (<div className="mt-5 animate-fade-in">{evaluationFeedback ? (<div className={`p-4 rounded-lg flex items-start gap-3 border-l-4 ${evaluationFeedback.evaluation === "co[...]
+                <div className="mt-6 flex justify-center space-x-4">{!canProceed ? (<Button3D onClick={handleSubmitAnswer} disabled={isEvaluating} className="btn-primary w-full">{isEvaluating ? <><Luc[...]
+              </div>
+            );
+          };
+
+          const renderResults = () => (
+            <div className="bg-white p-8 rounded-2xl shadow-cool w-full max-w-3xl text-center animate-fade-in">
+                <LucideIcon iconName="Trophy" className="w-24 h-24 text-yellow-400 mx-auto mb-4 animate-bounce-slow" />
+                <h2 className="text-4xl font-extrabold text-gray-800 mb-2">Quiz Completed!</h2>
+                <p className="text-2xl text-gray-600 mb-6">Final Score: <span className="font-black text-indigo-600">{score}</span> / <span className="font-black text-gray-500">{quizData.length}</span[...]
+                {(correctionMode === 'end' || correctionMode === 'both') && (<div className="text-left my-8"><h3 className="text-2xl font-bold text-gray-800 mb-4 text-center">Final Report</h3><div cla[...]
+                <div className="flex flex-col md:flex-row justify-center gap-4 mt-8">
+                    <Button3D onClick={resetToSetup} className="btn-purple"><LucideIcon iconName="Brain" className="w-5 h-5" /> New Quiz</Button3D>
+                </div>
+            </div>
+          );
+
+          const renderContent = () => {
+            switch (view) {
+              case 'quiz': return renderQuiz();
+              case 'results': return renderResults();
+              case 'setup': default: return renderSetup();
+            }
+          };
+
+          return (
+            <div className="min-h-screen bg-gray-50 bg-grid flex flex-col items-center justify-center p-4 font-sans selection:bg-indigo-200">
+              <div className="w-full max-w-3xl mx-auto">
+                <div className="flex justify-center items-center gap-2 mb-4">
+                    <OQLogo className="w-28 h-20" />
+                    <h1 className="text-5xl md:text-6xl font-black text-gray-800 text-center tracking-tighter">OmniQuiz AI</h1>
+                </div>
+                <p className="text-center text-gray-500 mb-8 text-lg">Your personal, customizable study partner. ✨</p>
+                {error && (<div className="bg-red-100 border-l-4 border-red-500 text-red-800 p-4 rounded-lg mb-4 shadow-md animate-fade-in" role="alert"><p className="font-bold">Error</p><p>{error}</p[...]
+                
+                {isFileProcessing ? ( // Show file processing specific loading screen
+                    <div className="bg-white p-6 md:p-8 rounded-2xl shadow-cool w-full max-w-3xl animate-fade-in flex flex-col items-center justify-center min-h-[400px]">
+                        <LucideIcon iconName="Loader2" className="w-16 h-16 text-blue-500 animate-spin mb-6" />
+                        <h2 className="text-3xl font-bold text-gray-800">Extracting Text</h2>
+                        <p className="text-gray-600 mt-2 text-lg">Please wait while we process your file...</p>
+                    </div>
+                ) : loading ? ( // Show quiz generation loading screen
+                    <div className="bg-white p-6 md:p-8 rounded-2xl shadow-cool w-full max-w-3xl animate-fade-in flex flex-col items-center justify-center min-h-[400px]">
+                        <CircularLoader className="w-24 h-24 mb-6" /> {/* Using the new CircularLoader */}
+                        <h2 className="text-3xl font-bold text-gray-800">Generating Your Quiz</h2>
+                        <p className="text-gray-600 mt-2 text-lg">The AI is crafting your questions, please wait...</p>
+                    </div>
+                ) : (
+                    renderContent()
+                )}
+              </div>
+            </div>
+          );
+        }
+
+        // Render the App component into the root div
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+    <!-- PDF.js CDN (placed here to ensure window.pdfjsLib is available before React component mounts) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <!-- Mammoth.js CDN for DOCX (placed here to ensure window.mammoth is available before React component mounts) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+</body>
+</html>
