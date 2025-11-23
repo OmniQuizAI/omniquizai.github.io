@@ -451,7 +451,7 @@
               - "long_answer": needs "referenceAnswer" (detailed correct answer).
               Text: ${inputText}`;
               const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } };
-              const apiKey = "AIzaSyB4v8PbwqM7UPquJeS1QYQF7aORjFxliik";
+              const apiKey = "AIzaSyDhF81uX1JMsQhpqiMtVzvJbvVqpywhyAs";
               const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
               
               const response = await fetchWithRetry(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
@@ -491,7 +491,7 @@
             try {
               const prompt = `Evaluate the user's answer. Question: "${question.question}". Reference Answer: "${question.referenceAnswer || question.correctAnswer}". User's Answer: "${userAnswer}". Output JSON with "evaluation" ("correct", "partially correct", "incorrect") and a concise "reason".`;
               const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } };
-              const apiKey = "AIzaSyB4v8PbwqM7UPquJeS1QYQF7aORjFxliik";
+              const apiKey = "AIzaSyDhF81uX1JMsQhpqiMtVzvJbvVqpywhyAs";
               const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
               const response = await fetchWithRetry(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
