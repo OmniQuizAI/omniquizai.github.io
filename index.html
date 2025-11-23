@@ -17,15 +17,6 @@
     <!-- Babel CDN for JSX transformation -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <!-- Import Map for Google GenAI SDK -->
-    <script type="importmap">
-      {
-        "imports": {
-          "@google/genai": "https://esm.run/@google/genai"
-        }
-      }
-    </script>
-
     <style>
         /* Custom CSS for the application */
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap');
@@ -112,9 +103,7 @@
 <body>
     <div id="root"></div>
 
-    <script type="text/babel" data-type="module">
-        import { GoogleGenAI } from "@google/genai";
-
+    <script type="text/babel">
         // Helper function to create Lucide icons as inline SVGs
         // Note: Lucide React components (Brain, FileText, etc.) are replaced with
         // a custom LucideIcon component that renders inline SVGs, as direct imports
@@ -409,6 +398,40 @@
                 event.target.value = null;
             }
           };
+          
+          // Helper for API calls with retry logic for 503 errors
+          const fetchWithRetry = async (url, options, maxRetries = 3) => {
+            let lastError;
+            for (let i = 0; i < maxRetries; i++) {
+              try {
+                const response = await fetch(url, options);
+                if (response.status === 503) {
+                  // Specific error for retrying
+                  throw new Error('Service Unavailable');
+                }
+                // For other non-ok statuses, we'll throw a generic error to be caught below
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error("API Error Response:", errorText);
+                    throw new Error(`API request failed with status ${response.status}`);
+                }
+                return response; // Success
+              } catch (error) {
+                lastError = error;
+                if (error.message === 'Service Unavailable') {
+                  const delay = Math.pow(2, i) * 1000 + Math.random() * 1000; // Exponential backoff with jitter
+                  console.log(`Service unavailable. Retrying in ${Math.round(delay / 1000)}s... (Attempt ${i + 1}/${maxRetries})`);
+                  await new Promise(resolve => setTimeout(resolve, delay));
+                } else {
+                  // For other errors (e.g., network issues, non-503 status codes), fail immediately
+                  throw error;
+                }
+              }
+            }
+            // If all retries fail, throw the last captured error
+            throw lastError;
+          };
+
 
           const generateQuiz = async () => {
             if (!inputText.trim()) { setError("Please provide text to generate a quiz."); return; }
@@ -427,17 +450,14 @@
               - "short_answer": needs "referenceAnswer" (concise correct answer).
               - "long_answer": needs "referenceAnswer" (detailed correct answer).
               Text: ${inputText}`;
+              const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } };
+              const apiKey = "AIzaSyDhF81uX1JMsQhpqiMtVzvJbvVqpywhyAs";
+              const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
               
-              const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-              const response = await ai.models.generateContent({
-                model: "gemini-2.5-flash",
-                contents: prompt,
-                config: {
-                  responseMimeType: "application/json"
-                }
-              });
-
-              let rawQuizText = response.text;
+              const response = await fetchWithRetry(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+              
+              const result = await response.json();
+              let rawQuizText = result.candidates[0].content.parts[0].text;
 
               if (rawQuizText.startsWith('```json') && rawQuizText.endsWith('```')) {
                   rawQuizText = rawQuizText.substring(7, rawQuizText.length - 3).trim();
@@ -470,17 +490,14 @@
             setIsEvaluating(true); setEvaluationFeedback(null);
             try {
               const prompt = `Evaluate the user's answer. Question: "${question.question}". Reference Answer: "${question.referenceAnswer || question.correctAnswer}". User's Answer: "${userAnswer}". Output JSON with "evaluation" ("correct", "partially correct", "incorrect") and a concise "reason".`;
-              
-              const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-              const response = await ai.models.generateContent({
-                model: "gemini-2.5-flash",
-                contents: prompt,
-                config: {
-                  responseMimeType: "application/json"
-                }
-              });
+              const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } };
+              const apiKey = "AIzaSyDhF81uX1JMsQhpqiMtVzvJbvVqpywhyAs";
+              const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
-              let rawEvaluationText = response.text;
+              const response = await fetchWithRetry(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+              
+              const result = await response.json();
+              let rawEvaluationText = result.candidates[0].content.parts[0].text;
 
               if (rawEvaluationText.startsWith('```json') && rawEvaluationText.endsWith('```')) {
                   rawEvaluationText = rawEvaluationText.substring(7, rawEvaluationText.length - 3).trim();
